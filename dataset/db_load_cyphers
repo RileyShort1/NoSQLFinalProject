@@ -12,3 +12,14 @@ SET u.name = trim(row.Name),
     u.bio = trim(row.Bio),
     u.city = trim(row.City),
     u.country = trim(row.Country)
+
+
+Add Edges:
+
+LOAD CSV WITH HEADERS
+FROM 'file:///follows.csv' AS row
+WITH row, toInteger(row.FollowerID) AS followerId, toInteger(row.FollowedID) AS followedId
+WHERE followerId IS NOT NULL AND followedId IS NOT NULL
+MATCH (follower:User {userId: followerId})
+MATCH (followed:User {userId: followedId})
+MERGE (follower)-[:FOLLOWS]->(followed)
