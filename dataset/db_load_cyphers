@@ -1,0 +1,14 @@
+Initial Data Load:
+
+LOAD CSV WITH HEADERS
+FROM 'file:///SocialMediaUsersDataset_US_with_bio.csv' AS row
+WITH row, toInteger(row.UserID) AS UserID
+WHERE UserID IS NOT NULL
+MERGE (u:User {userId: UserID})
+SET u.name = trim(row.Name),
+    u.gender = trim(row.Gender),
+    u.dob = trim(row.DOB),
+    u.interests = trim(row.Interests),
+    u.bio = trim(row.Bio),
+    u.city = trim(row.City),
+    u.country = trim(row.Country)
