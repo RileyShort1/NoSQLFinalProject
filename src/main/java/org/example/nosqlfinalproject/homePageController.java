@@ -10,6 +10,7 @@ import javafx.util.Callback;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class homePageController {
     
@@ -35,11 +36,11 @@ public class homePageController {
     
     // Following Tab
     @FXML
-    private ListView<String> followingListView;
+    private ListView<User> followingListView;
     
     // Followers Tab
     @FXML
-    private ListView<String> followersListView;
+    private ListView<User> followersListView;
     
     // Search Tab
     @FXML
@@ -47,15 +48,15 @@ public class homePageController {
     @FXML
     private Button searchButton;
     @FXML
-    private ListView<String> discoverListView;
+    private ListView<User> discoverListView;
     
     // Discover Tab
     @FXML
-    private ListView<String> mutualFriendsListView;
+    private ListView<User> mutualFriendsListView;
     @FXML
-    private ListView<String> popularUsersListView;
+    private ListView<User> popularUsersListView;
     @FXML
-    private ListView<String> suggestedUsersListView;
+    private ListView<User> suggestedUsersListView;
     @FXML
     private VBox userProfilePane;
     @FXML
@@ -82,9 +83,9 @@ public class homePageController {
     private TabPane mainTabPane;
     
     // Sample data - replace with actual database connections
-    private List<String> followingList = new ArrayList<>();
-    private List<String> followersList = new ArrayList<>();
-    private String selectedUser = null;
+    private List<User> followingList = new ArrayList<>();
+    private List<User> followersList = new ArrayList<>();
+    private User selectedUser = null;
     
     @FXML
     public void initialize() {
@@ -106,21 +107,21 @@ public class homePageController {
     }
     
     private void setupFollowingListView() {
-        followingListView.setCellFactory(new Callback<ListView<String>, ListCell<String>>() {
+        followingListView.setCellFactory(new Callback<ListView<User>, ListCell<User>>() {
             @Override
-            public ListCell<String> call(ListView<String> param) {
-                return new ListCell<String>() {
+            public ListCell<User> call(ListView<User> param) {
+                return new ListCell<User>() {
                     @Override
-                    protected void updateItem(String item, boolean empty) {
-                        super.updateItem(item, empty);
-                        if (empty || item == null) {
+                    protected void updateItem(User user, boolean empty) {
+                        super.updateItem(user, empty);
+                        if (empty || user == null) {
                             setGraphic(null);
                         } else {
                             HBox hbox = new HBox(10);
-                            Text nameText = new Text(item);
+                            Text nameText = new Text(user.toString());
                             nameText.setStyle("-fx-font-size: 14px;");
                             Button unfollowButton = new Button("Unfollow");
-                            unfollowButton.setOnAction(e -> unfollowUser(item));
+                            unfollowButton.setOnAction(e -> unfollowUser(user));
                             hbox.getChildren().addAll(nameText, unfollowButton);
                             setGraphic(hbox);
                         }
@@ -131,28 +132,28 @@ public class homePageController {
     }
     
     private void setupFollowersListView() {
-        followersListView.setCellFactory(new Callback<ListView<String>, ListCell<String>>() {
+        followersListView.setCellFactory(new Callback<ListView<User>, ListCell<User>>() {
             @Override
-            public ListCell<String> call(ListView<String> param) {
-                return new ListCell<String>() {
+            public ListCell<User> call(ListView<User> param) {
+                return new ListCell<User>() {
                     @Override
-                    protected void updateItem(String item, boolean empty) {
-                        super.updateItem(item, empty);
-                        if (empty || item == null) {
+                    protected void updateItem(User user, boolean empty) {
+                        super.updateItem(user, empty);
+                        if (empty || user == null) {
                             setGraphic(null);
                         } else {
                             HBox hbox = new HBox(10);
-                            Text nameText = new Text(item);
+                            Text nameText = new Text(user.toString());
                             nameText.setStyle("-fx-font-size: 14px;");
                             
                             // Check if we're already following this user
                             Button actionButton;
-                            if (followingList.contains(item)) {
+                            if (isFollowing(user)) {
                                 actionButton = new Button("Unfollow");
-                                actionButton.setOnAction(e -> unfollowUser(item));
+                                actionButton.setOnAction(e -> unfollowUser(user));
                             } else {
                                 actionButton = new Button("Follow");
-                                actionButton.setOnAction(e -> followUser(item));
+                                actionButton.setOnAction(e -> followUser(user));
                             }
                             
                             hbox.getChildren().addAll(nameText, actionButton);
@@ -165,33 +166,33 @@ public class homePageController {
     }
     
     private void setupDiscoverListView() {
-        discoverListView.setCellFactory(new Callback<ListView<String>, ListCell<String>>() {
+        discoverListView.setCellFactory(new Callback<ListView<User>, ListCell<User>>() {
             @Override
-            public ListCell<String> call(ListView<String> param) {
-                return new ListCell<String>() {
+            public ListCell<User> call(ListView<User> param) {
+                return new ListCell<User>() {
                     @Override
-                    protected void updateItem(String item, boolean empty) {
-                        super.updateItem(item, empty);
-                        if (empty || item == null) {
+                    protected void updateItem(User user, boolean empty) {
+                        super.updateItem(user, empty);
+                        if (empty || user == null) {
                             setGraphic(null);
                         } else {
                             HBox hbox = new HBox(10);
-                            Text nameText = new Text(item);
+                            Text nameText = new Text(user.toString());
                             nameText.setStyle("-fx-font-size: 14px; -fx-fill: #0066cc;");
                             
                             // Check if we're already following this user
                             Button actionButton;
-                            if (followingList.contains(item)) {
+                            if (isFollowing(user)) {
                                 actionButton = new Button("Unfollow");
                                 actionButton.setOnAction(e -> {
                                     e.consume(); // Prevent cell selection
-                                    unfollowUser(item);
+                                    unfollowUser(user);
                                 });
                             } else {
                                 actionButton = new Button("Follow");
                                 actionButton.setOnAction(e -> {
                                     e.consume(); // Prevent cell selection
-                                    followUser(item);
+                                    followUser(user);
                                 });
                             }
                             
@@ -200,8 +201,8 @@ public class homePageController {
                             
                             // Make the entire cell clickable to show profile
                             setOnMouseClicked(e -> {
-                                if (e.getClickCount() == 1 && item != null) {
-                                    showUserProfile(item);
+                                if (e.getClickCount() == 1 && user != null) {
+                                    showUserProfile(user);
                                 }
                             });
                         }
@@ -260,20 +261,20 @@ public class homePageController {
         
         // TODO: Implement actual search in database
         // For now, show sample results
-        List<String> searchResults = new ArrayList<>();
+        List<User> searchResults = new ArrayList<>();
         // This would be replaced with actual database query
-        searchResults.add("Sample User 1");
-        searchResults.add("Sample User 2");
-        searchResults.add("Sample User 3");
+        searchResults.add(new User(1, "Sample", "User 1", "Male", "1990-01-01", "Technology", "Sample bio 1", "New York", "USA"));
+        searchResults.add(new User(2, "Sample", "User 2", "Female", "1992-05-15", "Music", "Sample bio 2", "Los Angeles", "USA"));
+        searchResults.add(new User(3, "Sample", "User 3", "Other", "1988-12-20", "Travel", "Sample bio 3", "Chicago", "USA"));
         
         discoverListView.getItems().clear();
         discoverListView.getItems().addAll(searchResults);
     }
     
-    private void followUser(String username) {
-        if (!followingList.contains(username)) {
-            followingList.add(username);
-            followingListView.getItems().add(username);
+    private void followUser(User user) {
+        if (!isFollowing(user)) {
+            followingList.add(user);
+            followingListView.getItems().add(user);
             
             // Update the button in all lists if present
             refreshFollowersList();
@@ -282,14 +283,14 @@ public class homePageController {
             refreshPopularUsersList();
             refreshSuggestedUsersList();
             
-            System.out.println("Now following: " + username);
+            System.out.println("Now following: " + user.toString());
         }
     }
     
-    private void unfollowUser(String username) {
-        if (followingList.contains(username)) {
-            followingList.remove(username);
-            followingListView.getItems().remove(username);
+    private void unfollowUser(User user) {
+        if (isFollowing(user)) {
+            followingList.removeIf(u -> u.getId() == user.getId());
+            followingListView.getItems().removeIf(u -> u.getId() == user.getId());
             
             // Update the button in all lists if present
             refreshFollowersList();
@@ -298,41 +299,45 @@ public class homePageController {
             refreshPopularUsersList();
             refreshSuggestedUsersList();
             
-            System.out.println("Unfollowed: " + username);
+            System.out.println("Unfollowed: " + user.toString());
         }
+    }
+    
+    private boolean isFollowing(User user) {
+        return followingList.stream().anyMatch(u -> u.getId() == user.getId());
     }
     
     private void refreshFollowersList() {
         // Refresh the followers list view to update button states
-        List<String> currentFollowers = new ArrayList<>(followersListView.getItems());
+        List<User> currentFollowers = new ArrayList<>(followersListView.getItems());
         followersListView.getItems().clear();
         followersListView.getItems().addAll(currentFollowers);
     }
     
     private void refreshDiscoverList() {
         // Refresh the discover list view to update button states
-        List<String> currentDiscover = new ArrayList<>(discoverListView.getItems());
+        List<User> currentDiscover = new ArrayList<>(discoverListView.getItems());
         discoverListView.getItems().clear();
         discoverListView.getItems().addAll(currentDiscover);
     }
     
     private void refreshMutualFriendsList() {
         // Refresh the mutual friends list view to update button states
-        List<String> currentMutual = new ArrayList<>(mutualFriendsListView.getItems());
+        List<User> currentMutual = new ArrayList<>(mutualFriendsListView.getItems());
         mutualFriendsListView.getItems().clear();
         mutualFriendsListView.getItems().addAll(currentMutual);
     }
     
     private void refreshPopularUsersList() {
         // Refresh the popular users list view to update button states
-        List<String> currentPopular = new ArrayList<>(popularUsersListView.getItems());
+        List<User> currentPopular = new ArrayList<>(popularUsersListView.getItems());
         popularUsersListView.getItems().clear();
         popularUsersListView.getItems().addAll(currentPopular);
     }
     
     private void refreshSuggestedUsersList() {
         // Refresh the suggested users list view to update button states
-        List<String> currentSuggested = new ArrayList<>(suggestedUsersListView.getItems());
+        List<User> currentSuggested = new ArrayList<>(suggestedUsersListView.getItems());
         suggestedUsersListView.getItems().clear();
         suggestedUsersListView.getItems().addAll(currentSuggested);
     }
@@ -345,78 +350,59 @@ public class homePageController {
     private void loadFollowingList() {
         // TODO: Load actual following list from database
         // For now, use sample data
-        followingList.add("John Doe");
-        followingList.add("Jane Smith");
+        User user1 = new User(101, "John", "Doe", "Male", "1990-01-15", "Technology, Gaming", "Tech enthusiast", "San Francisco", "USA");
+        User user2 = new User(102, "Jane", "Smith", "Female", "1992-05-20", "Music, Art", "Artist and musician", "New York", "USA");
+        followingList.add(user1);
+        followingList.add(user2);
         followingListView.getItems().addAll(followingList);
     }
     
     private void loadFollowersList() {
         // TODO: Load actual followers list from database
         // For now, use sample data
-        followersList.add("Alice Johnson");
-        followersList.add("Bob Williams");
-        followersList.add("Charlie Brown");
+        User user1 = new User(201, "Alice", "Johnson", "Female", "1988-03-10", "Travel, Photography", "World traveler", "Seattle", "USA");
+        User user2 = new User(202, "Bob", "Williams", "Male", "1995-07-25", "Sports, Fitness", "Fitness coach", "Miami", "USA");
+        User user3 = new User(203, "Charlie", "Brown", "Male", "1991-11-30", "Food, Cooking", "Chef", "Portland", "USA");
+        followersList.add(user1);
+        followersList.add(user2);
+        followersList.add(user3);
         followersListView.getItems().addAll(followersList);
     }
     
-    private void showUserProfile(String username) {
-        selectedUser = username;
+    private void showUserProfile(User user) {
+        selectedUser = user;
         
         // Hide the "no selection" text and show the profile pane
         noSelectionText.setVisible(false);
         userProfilePane.setVisible(true);
         
-        // TODO: Load actual user profile data from database
-        // For now, use sample data based on username
-        profileNameText.setText(username);
-        
-        // Sample profile data - replace with actual database query
-        profileGenderText.setText(getSampleProfileData(username, "gender"));
-        profileBirthdayText.setText(getSampleProfileData(username, "birthday"));
-        profileCityText.setText(getSampleProfileData(username, "city"));
-        profileCountryText.setText(getSampleProfileData(username, "country"));
-        profileInterestsText.setText(getSampleProfileData(username, "interests"));
-        profileBioText.setText(getSampleProfileData(username, "bio"));
+        // Display user profile data from User object
+        profileNameText.setText(user.toString());
+        profileGenderText.setText(user.getGender() != null ? user.getGender() : "Not specified");
+        profileBirthdayText.setText(user.getDob() != null ? user.getDob() : "Not specified");
+        profileCityText.setText(user.getCity() != null ? user.getCity() : "Not specified");
+        profileCountryText.setText(user.getCountry() != null ? user.getCountry() : "Not specified");
+        profileInterestsText.setText(user.getInterests() != null ? user.getInterests() : "Not specified");
+        profileBioText.setText(user.getBio() != null ? user.getBio() : "Not specified");
         
         // Update follow button based on current following status
-        if (followingList.contains(username)) {
+        if (isFollowing(user)) {
             profileFollowButton.setText("Unfollow");
         } else {
             profileFollowButton.setText("Follow");
         }
     }
     
-    private String getSampleProfileData(String username, String field) {
-        // TODO: Replace with actual database query
-        // This is just sample data for demonstration
-        switch (field) {
-            case "gender":
-                return "Not specified";
-            case "birthday":
-                return "Not specified";
-            case "city":
-                return "Sample City";
-            case "country":
-                return "USA";
-            case "interests":
-                return "Technology, Music, Travel";
-            case "bio":
-                return "This is a sample bio for " + username + ". Replace this with actual database data.";
-            default:
-                return "-";
-        }
-    }
-    
     @FXML
     private void handleProfileFollowAction() {
         if (selectedUser != null) {
-            if (followingList.contains(selectedUser)) {
+            if (isFollowing(selectedUser)) {
                 unfollowUser(selectedUser);
             } else {
                 followUser(selectedUser);
             }
             // Update the button text
-            if (followingList.contains(selectedUser)) {
+            if (isFollowing(selectedUser)) {
                 profileFollowButton.setText("Unfollow");
             } else {
                 profileFollowButton.setText("Follow");
@@ -425,32 +411,32 @@ public class homePageController {
     }
     
     private void setupMutualFriendsListView() {
-        mutualFriendsListView.setCellFactory(new Callback<ListView<String>, ListCell<String>>() {
+        mutualFriendsListView.setCellFactory(new Callback<ListView<User>, ListCell<User>>() {
             @Override
-            public ListCell<String> call(ListView<String> param) {
-                return new ListCell<String>() {
+            public ListCell<User> call(ListView<User> param) {
+                return new ListCell<User>() {
                     @Override
-                    protected void updateItem(String item, boolean empty) {
-                        super.updateItem(item, empty);
-                        if (empty || item == null) {
+                    protected void updateItem(User user, boolean empty) {
+                        super.updateItem(user, empty);
+                        if (empty || user == null) {
                             setGraphic(null);
                         } else {
                             HBox hbox = new HBox(10);
-                            Text nameText = new Text(item);
+                            Text nameText = new Text(user.toString());
                             nameText.setStyle("-fx-font-size: 14px;");
                             
                             Button actionButton;
-                            if (followingList.contains(item)) {
+                            if (isFollowing(user)) {
                                 actionButton = new Button("Unfollow");
                                 actionButton.setOnAction(e -> {
                                     e.consume();
-                                    unfollowUser(item);
+                                    unfollowUser(user);
                                 });
                             } else {
                                 actionButton = new Button("Follow");
                                 actionButton.setOnAction(e -> {
                                     e.consume();
-                                    followUser(item);
+                                    followUser(user);
                                 });
                             }
                             
@@ -464,32 +450,32 @@ public class homePageController {
     }
     
     private void setupPopularUsersListView() {
-        popularUsersListView.setCellFactory(new Callback<ListView<String>, ListCell<String>>() {
+        popularUsersListView.setCellFactory(new Callback<ListView<User>, ListCell<User>>() {
             @Override
-            public ListCell<String> call(ListView<String> param) {
-                return new ListCell<String>() {
+            public ListCell<User> call(ListView<User> param) {
+                return new ListCell<User>() {
                     @Override
-                    protected void updateItem(String item, boolean empty) {
-                        super.updateItem(item, empty);
-                        if (empty || item == null) {
+                    protected void updateItem(User user, boolean empty) {
+                        super.updateItem(user, empty);
+                        if (empty || user == null) {
                             setGraphic(null);
                         } else {
                             HBox hbox = new HBox(10);
-                            Text nameText = new Text(item);
+                            Text nameText = new Text(user.toString());
                             nameText.setStyle("-fx-font-size: 14px;");
                             
                             Button actionButton;
-                            if (followingList.contains(item)) {
+                            if (isFollowing(user)) {
                                 actionButton = new Button("Unfollow");
                                 actionButton.setOnAction(e -> {
                                     e.consume();
-                                    unfollowUser(item);
+                                    unfollowUser(user);
                                 });
                             } else {
                                 actionButton = new Button("Follow");
                                 actionButton.setOnAction(e -> {
                                     e.consume();
-                                    followUser(item);
+                                    followUser(user);
                                 });
                             }
                             
@@ -503,32 +489,32 @@ public class homePageController {
     }
     
     private void setupSuggestedUsersListView() {
-        suggestedUsersListView.setCellFactory(new Callback<ListView<String>, ListCell<String>>() {
+        suggestedUsersListView.setCellFactory(new Callback<ListView<User>, ListCell<User>>() {
             @Override
-            public ListCell<String> call(ListView<String> param) {
-                return new ListCell<String>() {
+            public ListCell<User> call(ListView<User> param) {
+                return new ListCell<User>() {
                     @Override
-                    protected void updateItem(String item, boolean empty) {
-                        super.updateItem(item, empty);
-                        if (empty || item == null) {
+                    protected void updateItem(User user, boolean empty) {
+                        super.updateItem(user, empty);
+                        if (empty || user == null) {
                             setGraphic(null);
                         } else {
                             HBox hbox = new HBox(10);
-                            Text nameText = new Text(item);
+                            Text nameText = new Text(user.toString());
                             nameText.setStyle("-fx-font-size: 14px;");
                             
                             Button actionButton;
-                            if (followingList.contains(item)) {
+                            if (isFollowing(user)) {
                                 actionButton = new Button("Unfollow");
                                 actionButton.setOnAction(e -> {
                                     e.consume();
-                                    unfollowUser(item);
+                                    unfollowUser(user);
                                 });
                             } else {
                                 actionButton = new Button("Follow");
                                 actionButton.setOnAction(e -> {
                                     e.consume();
-                                    followUser(item);
+                                    followUser(user);
                                 });
                             }
                             
@@ -550,23 +536,23 @@ public class homePageController {
     private void loadPopularUsersList() {
         // TODO: Load actual popular users from database
         // For now, use sample data
-        List<String> popularUsers = new ArrayList<>();
-        popularUsers.add("Celebrity User 1");
-        popularUsers.add("Celebrity User 2");
-        popularUsers.add("Influencer User");
-        popularUsers.add("Popular User 4");
-        popularUsers.add("Trending User 5");
+        List<User> popularUsers = new ArrayList<>();
+        popularUsers.add(new User(301, "Celebrity", "User 1", "Male", "1985-06-10", "Entertainment, Acting", "Famous actor", "Los Angeles", "USA"));
+        popularUsers.add(new User(302, "Celebrity", "User 2", "Female", "1990-08-15", "Music, Singing", "Pop star", "Nashville", "USA"));
+        popularUsers.add(new User(303, "Influencer", "User", "Other", "1992-04-22", "Fashion, Lifestyle", "Fashion influencer", "New York", "USA"));
+        popularUsers.add(new User(304, "Popular", "User 4", "Male", "1988-12-05", "Sports, Fitness", "Athlete", "Boston", "USA"));
+        popularUsers.add(new User(305, "Trending", "User 5", "Female", "1995-02-18", "Technology, Innovation", "Tech entrepreneur", "San Francisco", "USA"));
         popularUsersListView.getItems().addAll(popularUsers);
     }
     
     private void loadSuggestedUsersList() {
         // TODO: Load actual suggested users from database based on mutual connections, interests, etc.
         // For now, use sample data
-        List<String> suggestedUsers = new ArrayList<>();
-        suggestedUsers.add("Friend of Friend 1");
-        suggestedUsers.add("Similar Interest User");
-        suggestedUsers.add("Suggested User 3");
-        suggestedUsers.add("Recommended User 4");
+        List<User> suggestedUsers = new ArrayList<>();
+        suggestedUsers.add(new User(401, "Friend of", "Friend 1", "Male", "1991-03-12", "Technology, Gaming", "Tech enthusiast", "Austin", "USA"));
+        suggestedUsers.add(new User(402, "Similar Interest", "User", "Female", "1993-07-08", "Music, Art", "Musician", "Portland", "USA"));
+        suggestedUsers.add(new User(403, "Suggested", "User 3", "Male", "1989-09-25", "Travel, Photography", "Travel blogger", "Denver", "USA"));
+        suggestedUsers.add(new User(404, "Recommended", "User 4", "Female", "1994-11-14", "Food, Cooking", "Food blogger", "Seattle", "USA"));
         suggestedUsersListView.getItems().addAll(suggestedUsers);
     }
 }
