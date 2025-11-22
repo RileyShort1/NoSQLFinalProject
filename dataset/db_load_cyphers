@@ -23,3 +23,19 @@ WHERE followerId IS NOT NULL AND followedId IS NOT NULL
 MATCH (follower:User {userId: followerId})
 MATCH (followed:User {userId: followedId})
 MERGE (follower)-[:FOLLOWS]->(followed)
+
+
+Creating Indexes:
+
+CREATE INDEX nameIndex IF NOT EXISTS FOR (u:User) ON (u.name)
+
+CREATE INDEX cityIndex IF NOT EXISTS FOR (u:User) ON (u.city)
+
+CREATE FULLTEXT INDEX userBioInterestsFulltext IF NOT EXISTS
+FOR (u:User) ON EACH [u.bio, u.interests]
+OPTIONS {
+  indexConfig: {
+    `fulltext.analyzer`: 'standard',
+    `fulltext.eventually_consistent`: true
+  }
+}
