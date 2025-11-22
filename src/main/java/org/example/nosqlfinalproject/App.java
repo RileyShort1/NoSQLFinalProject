@@ -9,8 +9,8 @@ import java.io.IOException;
 
 
 public class App extends Application {
-    public final double APP_W = 800;
-    public final double APP_H = 600;
+    public final double APP_W = 1200;
+    public final double APP_H = 800;
 
     @Override
     public void start(Stage stage) throws IOException {

@@ -1,16 +1,362 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.control.Button?>
-<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
 <?import javafx.scene.shape.Rectangle?>
+<?import javafx.scene.text.Font?>
 <?import javafx.scene.text.Text?>
+<?import javafx.geometry.Insets?>
 
-<AnchorPane xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.nosqlfinalproject.homePageController">
+<AnchorPane prefHeight="800.0" prefWidth="1200.0" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="org.example.nosqlfinalproject.homePageController">
     <children>
-        <Text layoutX="358.0" layoutY="304.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Home Page" wrappingWidth="83.7366943359375" />
-      <Rectangle arcHeight="5.0" arcWidth="5.0" fill="#d2d6d9" height="50.0" layoutY="7.0" stroke="BLACK" strokeType="INSIDE" width="800.0" />
-      <Button layoutX="14.0" layoutY="16.0" minHeight="16.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="84.0" style="-fx-background-color: white; -fx-text-fill: black;" text="Button" textFill="#793434" />
-      <Button layoutX="109.0" layoutY="16.0" minHeight="16.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="84.0" style="-fx-background-color: white; -fx-text-fill: black;" text="Button" textFill="#793434" />
-      <Button layoutX="203.0" layoutY="16.0" minHeight="16.0" mnemonicParsing="false" prefHeight="31.0" prefWidth="84.0" style="-fx-background-color: white; -fx-text-fill: black;" text="Button" textFill="#793434" />
+        <!-- Header Bar -->
+        <Rectangle arcHeight="5.0" arcWidth="5.0" fill="#2c3e50" height="62.0" layoutX="-9.0" layoutY="-5.0" stroke="BLACK" strokeType="INSIDE" width="1227.0" />
+        <Text fill="WHITE" layoutX="11.0" layoutY="34.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Social Explorer" wrappingWidth="188.38303565979004">
+            <font>
+                <Font name="System Bold" size="25.0" />
+            </font>
+        </Text>
+        
+        <!-- TabPane for main content -->
+        <TabPane fx:id="mainTabPane" layoutX="0.0" layoutY="62.0" prefHeight="738.0" prefWidth="1200.0" tabClosingPolicy="UNAVAILABLE">
+            <tabs>
+                <!-- Profile Tab -->
+                <Tab text="My Profile">
+                    <content>
+                        <ScrollPane fitToWidth="true" vbarPolicy="AS_NEEDED" hbarPolicy="NEVER">
+                            <content>
+                                <VBox spacing="20.0">
+                                    <padding>
+                                        <Insets top="20.0" right="20.0" bottom="20.0" left="20.0" />
+                                    </padding>
+                                    <children>
+                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Profile Information" wrappingWidth="300.0">
+                                            <font>
+                                                <Font name="System Bold" size="24.0" />
+                                            </font>
+                                        </Text>
+                                        
+                                        <GridPane hgap="15.0" vgap="15.0">
+                                            <columnConstraints>
+                                                <ColumnConstraints hgrow="SOMETIMES" minWidth="150.0" prefWidth="150.0" />
+                                                <ColumnConstraints hgrow="SOMETIMES" minWidth="300.0" prefWidth="300.0" />
+                                            </columnConstraints>
+                                            <rowConstraints>
+                                                <RowConstraints minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                <RowConstraints minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                <RowConstraints minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                <RowConstraints minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                <RowConstraints minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                <RowConstraints minHeight="30.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                            </rowConstraints>
+                                            <children>
+                                                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="First Name:" GridPane.columnIndex="0">
+                                                    <font>
+                                                        <Font name="System Bold" size="14.0" />
+                                                    </font>
+                                                </Text>
+                                                <TextField fx:id="firstNameField" prefWidth="300.0" style="-fx-background-color: white;" GridPane.columnIndex="1" />
+                                                
+                                                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Last Name:" GridPane.rowIndex="1" GridPane.columnIndex="0">
+                                                    <font>
+                                                        <Font name="System Bold" size="14.0" />
+                                                    </font>
+                                                </Text>
+                                                <TextField fx:id="lastNameField" prefWidth="300.0" style="-fx-background-color: white;" GridPane.rowIndex="1" GridPane.columnIndex="1" />
+                                                
+                                                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Gender:" GridPane.rowIndex="2" GridPane.columnIndex="0">
+                                                    <font>
+                                                        <Font name="System Bold" size="14.0" />
+                                                    </font>
+                                                </Text>
+                                                <TextField fx:id="genderField" prefWidth="300.0" style="-fx-background-color: white;" GridPane.rowIndex="2" GridPane.columnIndex="1" />
+                                                
+                                                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Birthday:" GridPane.rowIndex="3" GridPane.columnIndex="0">
+                                                    <font>
+                                                        <Font name="System Bold" size="14.0" />
+                                                    </font>
+                                                </Text>
+                                                <TextField fx:id="birthdayField" prefWidth="300.0" style="-fx-background-color: white;" GridPane.rowIndex="3" GridPane.columnIndex="1" />
+                                                
+                                                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="City:" GridPane.rowIndex="4" GridPane.columnIndex="0">
+                                                    <font>
+                                                        <Font name="System Bold" size="14.0" />
+                                                    </font>
+                                                </Text>
+                                                <TextField fx:id="cityField" prefWidth="300.0" style="-fx-background-color: white;" GridPane.rowIndex="4" GridPane.columnIndex="1" />
+                                                
+                                                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Country:" GridPane.rowIndex="5" GridPane.columnIndex="0">
+                                                    <font>
+                                                        <Font name="System Bold" size="14.0" />
+                                                    </font>
+                                                </Text>
+                                                <TextField fx:id="countryField" prefWidth="300.0" style="-fx-background-color: white;" GridPane.rowIndex="5" GridPane.columnIndex="1" />
+                                            </children>
+                                        </GridPane>
+                                        
+                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Interests:" wrappingWidth="300.0">
+                                            <font>
+                                                <Font name="System Bold" size="14.0" />
+                                            </font>
+                                        </Text>
+                                        <TextArea fx:id="interestsArea" prefHeight="80.0" prefWidth="500.0" wrapText="true" />
+                                        
+                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Bio:" wrappingWidth="300.0">
+                                            <font>
+                                                <Font name="System Bold" size="14.0" />
+                                            </font>
+                                        </Text>
+                                        <TextArea fx:id="bioArea" prefHeight="100.0" prefWidth="500.0" wrapText="true" />
+                                        
+                                        <Button fx:id="saveProfileButton" mnemonicParsing="false" onAction="#saveProfile" prefHeight="35.0" prefWidth="150.0" text="Save Profile" />
+                                    </children>
+                                </VBox>
+                            </content>
+                        </ScrollPane>
+                    </content>
+                </Tab>
+                
+                <!-- Following Tab -->
+                <Tab text="Following">
+                    <content>
+                        <VBox spacing="15.0">
+                            <padding>
+                                <Insets top="20.0" right="20.0" bottom="20.0" left="20.0" />
+                            </padding>
+                            <children>
+                                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="People You Follow" wrappingWidth="300.0">
+                                    <font>
+                                        <Font name="System Bold" size="24.0" />
+                                    </font>
+                                </Text>
+                                <ListView fx:id="followingListView" VBox.vgrow="ALWAYS" />
+                            </children>
+                        </VBox>
+                    </content>
+                </Tab>
+                
+                <!-- Followers Tab -->
+                <Tab text="Followers">
+                    <content>
+                        <VBox spacing="15.0">
+                            <padding>
+                                <Insets top="20.0" right="20.0" bottom="20.0" left="20.0" />
+                            </padding>
+                            <children>
+                                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Your Followers" wrappingWidth="300.0">
+                                    <font>
+                                        <Font name="System Bold" size="24.0" />
+                                    </font>
+                                </Text>
+                                <ListView fx:id="followersListView" VBox.vgrow="ALWAYS" />
+                            </children>
+                        </VBox>
+                    </content>
+                </Tab>
+                
+                <!-- Search Tab -->
+                <Tab text="Search">
+                    <content>
+                        <VBox spacing="15.0">
+                            <padding>
+                                <Insets top="20.0" right="20.0" bottom="20.0" left="20.0" />
+                            </padding>
+                            <children>
+                                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Search People" wrappingWidth="300.0">
+                                    <font>
+                                        <Font name="System Bold" size="24.0" />
+                                    </font>
+                                </Text>
+                                <HBox spacing="10.0">
+                                    <children>
+                                        <TextField fx:id="searchField" promptText="Search by username or name..." prefWidth="400.0" />
+                                        <Button fx:id="searchButton" mnemonicParsing="false" onAction="#searchUsers" prefHeight="30.0" prefWidth="100.0" text="Search" />
+                                    </children>
+                                </HBox>
+                                <SplitPane dividerPositions="0.5" VBox.vgrow="ALWAYS">
+                                            <items>
+                                                <!-- Left side: Search Results -->
+                                                <VBox spacing="10.0">
+                                                    <padding>
+                                                        <Insets top="10.0" right="10.0" bottom="10.0" left="10.0" />
+                                                    </padding>
+                                                    <children>
+                                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Search Results" wrappingWidth="200.0">
+                                                            <font>
+                                                                <Font name="System Bold" size="18.0" />
+                                                            </font>
+                                                        </Text>
+                                                        <ListView fx:id="discoverListView" VBox.vgrow="ALWAYS" />
+                                                    </children>
+                                                </VBox>
+                                                
+                                                <!-- Right side: User Profile -->
+                                                <ScrollPane fitToWidth="true" vbarPolicy="AS_NEEDED" hbarPolicy="NEVER">
+                                                    <content>
+                                                        <VBox spacing="15.0">
+                                                            <padding>
+                                                                <Insets top="10.0" right="10.0" bottom="10.0" left="10.0" />
+                                                            </padding>
+                                                            <children>
+                                                                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="User Profile" wrappingWidth="200.0">
+                                                                    <font>
+                                                                        <Font name="System Bold" size="18.0" />
+                                                                    </font>
+                                                                </Text>
+                                                                <VBox fx:id="userProfilePane" spacing="10.0" visible="false">
+                                                            <children>
+                                                                <Text fx:id="profileNameText" strokeType="OUTSIDE" strokeWidth="0.0" text="Name" wrappingWidth="500.0">
+                                                                    <font>
+                                                                        <Font name="System Bold" size="20.0" />
+                                                                    </font>
+                                                                </Text>
+                                                                <HBox spacing="10.0">
+                                                                    <children>
+                                                                        <Button fx:id="profileFollowButton" mnemonicParsing="false" onAction="#handleProfileFollowAction" prefHeight="30.0" prefWidth="120.0" text="Follow" />
+                                                                    </children>
+                                                                </HBox>
+                                                                <Separator prefWidth="500.0" />
+                                                                <GridPane hgap="10.0" vgap="10.0">
+                                                                    <columnConstraints>
+                                                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="100.0" prefWidth="120.0" />
+                                                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="200.0" prefWidth="350.0" />
+                                                                    </columnConstraints>
+                                                                    <rowConstraints>
+                                                                        <RowConstraints minHeight="25.0" prefHeight="25.0" vgrow="SOMETIMES" />
+                                                                        <RowConstraints minHeight="25.0" prefHeight="25.0" vgrow="SOMETIMES" />
+                                                                        <RowConstraints minHeight="25.0" prefHeight="25.0" vgrow="SOMETIMES" />
+                                                                        <RowConstraints minHeight="25.0" prefHeight="25.0" vgrow="SOMETIMES" />
+                                                                        <RowConstraints minHeight="25.0" prefHeight="25.0" vgrow="SOMETIMES" />
+                                                                        <RowConstraints minHeight="25.0" prefHeight="25.0" vgrow="SOMETIMES" />
+                                                                    </rowConstraints>
+                                                                    <children>
+                                                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Gender:" GridPane.columnIndex="0">
+                                                                            <font>
+                                                                                <Font name="System Bold" size="12.0" />
+                                                                            </font>
+                                                                        </Text>
+                                                                        <Text fx:id="profileGenderText" strokeType="OUTSIDE" strokeWidth="0.0" text="-" GridPane.columnIndex="1" />
+                                                                        
+                                                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Birthday:" GridPane.rowIndex="1" GridPane.columnIndex="0">
+                                                                            <font>
+                                                                                <Font name="System Bold" size="12.0" />
+                                                                            </font>
+                                                                        </Text>
+                                                                        <Text fx:id="profileBirthdayText" strokeType="OUTSIDE" strokeWidth="0.0" text="-" GridPane.rowIndex="1" GridPane.columnIndex="1" />
+                                                                        
+                                                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="City:" GridPane.rowIndex="2" GridPane.columnIndex="0">
+                                                                            <font>
+                                                                                <Font name="System Bold" size="12.0" />
+                                                                            </font>
+                                                                        </Text>
+                                                                        <Text fx:id="profileCityText" strokeType="OUTSIDE" strokeWidth="0.0" text="-" GridPane.rowIndex="2" GridPane.columnIndex="1" />
+                                                                        
+                                                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Country:" GridPane.rowIndex="3" GridPane.columnIndex="0">
+                                                                            <font>
+                                                                                <Font name="System Bold" size="12.0" />
+                                                                            </font>
+                                                                        </Text>
+                                                                        <Text fx:id="profileCountryText" strokeType="OUTSIDE" strokeWidth="0.0" text="-" GridPane.rowIndex="3" GridPane.columnIndex="1" />
+                                                                        
+                                                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Interests:" GridPane.rowIndex="4" GridPane.columnIndex="0">
+                                                                            <font>
+                                                                                <Font name="System Bold" size="12.0" />
+                                                                            </font>
+                                                                        </Text>
+                                                                        <Text fx:id="profileInterestsText" strokeType="OUTSIDE" strokeWidth="0.0" text="-" wrappingWidth="340.0" GridPane.rowIndex="4" GridPane.columnIndex="1" />
+                                                                        
+                                                                        <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Bio:" GridPane.rowIndex="5" GridPane.columnIndex="0">
+                                                                            <font>
+                                                                                <Font name="System Bold" size="12.0" />
+                                                                            </font>
+                                                                        </Text>
+                                                                        <Text fx:id="profileBioText" strokeType="OUTSIDE" strokeWidth="0.0" text="-" wrappingWidth="340.0" GridPane.rowIndex="5" GridPane.columnIndex="1" />
+                                                                    </children>
+                                                                </GridPane>
+                                                            </children>
+                                                        </VBox>
+                                                                <Text fx:id="noSelectionText" strokeType="OUTSIDE" strokeWidth="0.0" text="Click on a user from the search results to view their profile" wrappingWidth="500.0">
+                                                                    <font>
+                                                                        <Font size="14.0" />
+                                                                    </font>
+                                                                </Text>
+                                                            </children>
+                                                        </VBox>
+                                                    </content>
+                                                </ScrollPane>
+                                            </items>
+                                        </SplitPane>
+                                    </children>
+                                </VBox>
+                    </content>
+                </Tab>
+                
+                <!-- Discover Tab -->
+                <Tab text="Discover">
+                    <content>
+                        <VBox spacing="15.0">
+                            <padding>
+                                <Insets top="20.0" right="20.0" bottom="20.0" left="20.0" />
+                            </padding>
+                            <children>
+                                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Discover" wrappingWidth="300.0">
+                                    <font>
+                                        <Font name="System Bold" size="24.0" />
+                                    </font>
+                                </Text>
+                                <HBox spacing="20.0" VBox.vgrow="ALWAYS">
+                                    <children>
+                                        <!-- Mutual Friends Section -->
+                                        <VBox spacing="10.0" HBox.hgrow="ALWAYS">
+                                            <padding>
+                                                <Insets top="10.0" right="10.0" bottom="10.0" left="10.0" />
+                                            </padding>
+                                            <children>
+                                                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Mutual Friends" wrappingWidth="200.0">
+                                                    <font>
+                                                        <Font name="System Bold" size="18.0" />
+                                                    </font>
+                                                </Text>
+                                                <ListView fx:id="mutualFriendsListView" VBox.vgrow="ALWAYS" />
+                                            </children>
+                                        </VBox>
+                                        
+                                        <!-- Most Popular Users Section -->
+                                        <VBox spacing="10.0" HBox.hgrow="ALWAYS">
+                                            <padding>
+                                                <Insets top="10.0" right="10.0" bottom="10.0" left="10.0" />
+                                            </padding>
+                                            <children>
+                                                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Most Popular Users" wrappingWidth="200.0">
+                                                    <font>
+                                                        <Font name="System Bold" size="18.0" />
+                                                    </font>
+                                                </Text>
+                                                <ListView fx:id="popularUsersListView" VBox.vgrow="ALWAYS" />
+                                            </children>
+                                        </VBox>
+                                        
+                                        <!-- Suggested Users Section -->
+                                        <VBox spacing="10.0" HBox.hgrow="ALWAYS">
+                                            <padding>
+                                                <Insets top="10.0" right="10.0" bottom="10.0" left="10.0" />
+                                            </padding>
+                                            <children>
+                                                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Suggested for You" wrappingWidth="200.0">
+                                                    <font>
+                                                        <Font name="System Bold" size="18.0" />
+                                                    </font>
+                                                </Text>
+                                                <ListView fx:id="suggestedUsersListView" VBox.vgrow="ALWAYS" />
+                                            </children>
+                                        </VBox>
+                                    </children>
+                                </HBox>
+                            </children>
+                        </VBox>
+                    </content>
+                </Tab>
+            </tabs>
+        </TabPane>
     </children>
 </AnchorPane>
