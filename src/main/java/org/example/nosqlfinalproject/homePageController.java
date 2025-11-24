@@ -82,10 +82,41 @@ public class homePageController {
     @FXML
     private TabPane mainTabPane;
     
-    // Sample data - replace with actual database connections
+    // Repository and current user
+    private Neo4jUserRepository userRepository;
+    private User currentUser;
+    private int currentUserId = 1; // Default user ID - should be set from login
+    
+    // Cache for following list to avoid repeated queries
     private List<User> followingList = new ArrayList<>();
-    private List<User> followersList = new ArrayList<>();
     private User selectedUser = null;
+    
+    /**
+     * Set the repository and current user
+     * This should be called after login or when initializing the controller
+     */
+    public void setRepository(Neo4jUserRepository repository, int userId) {
+        this.userRepository = repository;
+        this.currentUserId = userId;
+        loadCurrentUser();
+    }
+    
+    /**
+     * Set the repository and current user with User object
+     */
+    public void setRepository(Neo4jUserRepository repository, User user) {
+        this.userRepository = repository;
+        this.currentUser = user;
+        this.currentUserId = user.getId();
+        
+        // Load all data after setting repository and user
+        loadProfileData();
+        loadFollowingList();
+        loadFollowersList();
+        loadMutualFriendsList();
+        loadPopularUsersList();
+        loadSuggestedUsersList();
+    }
     
     @FXML
     public void initialize() {
@@ -97,13 +128,22 @@ public class homePageController {
         setupPopularUsersListView();
         setupSuggestedUsersListView();
         
-        // Load initial data (replace with actual data loading)
-        loadProfileData();
-        loadFollowingList();
-        loadFollowersList();
-        loadMutualFriendsList();
-        loadPopularUsersList();
-        loadSuggestedUsersList();
+        // Note: Repository should be set before loading data
+        // If repository is not set, methods will handle gracefully
+        if (userRepository != null) {
+            loadProfileData();
+            loadFollowingList();
+            loadFollowersList();
+            loadMutualFriendsList();
+            loadPopularUsersList();
+            loadSuggestedUsersList();
+        }
+    }
+    
+    private void loadCurrentUser() {
+        if (userRepository != null) {
+            currentUser = userRepository.findUserById(currentUserId);
+        }
     }
     
     private void setupFollowingListView() {
@@ -221,34 +261,64 @@ public class homePageController {
     
     @FXML
     private void saveProfile() {
-        // TODO: Implement actual save to database
-        String firstName = firstNameField.getText();
-        String lastName = lastNameField.getText();
-        String gender = genderField.getText();
-        String birthday = birthdayField.getText();
-        String city = cityField.getText();
-        String country = countryField.getText();
-        String interests = interestsArea.getText();
-        String bio = bioArea.getText();
+        if (userRepository == null || currentUser == null) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText(null);
+            alert.setContentText("Repository not initialized. Please login first.");
+            alert.showAndWait();
+            return;
+        }
         
-        // For now, just show a confirmation
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Profile Saved");
-        alert.setHeaderText(null);
-        alert.setContentText("Your profile has been saved successfully!");
-        alert.showAndWait();
-        
-        System.out.println("Profile saved:");
-        System.out.println("Name: " + firstName + " " + lastName);
-        System.out.println("Gender: " + gender);
-        System.out.println("Birthday: " + birthday);
-        System.out.println("Location: " + city + ", " + country);
-        System.out.println("Interests: " + interests);
-        System.out.println("Bio: " + bio);
+        try {
+            String firstName = firstNameField.getText();
+            String lastName = lastNameField.getText();
+            String gender = genderField.getText();
+            String birthday = birthdayField.getText();
+            String city = cityField.getText();
+            String country = countryField.getText();
+            String interests = interestsArea.getText();
+            String bio = bioArea.getText();
+            
+            // Update current user object
+            currentUser.setFirstName(firstName);
+            currentUser.setLastName(lastName);
+            currentUser.setGender(gender);
+            currentUser.setDob(birthday);
+            currentUser.setCity(city);
+            currentUser.setCountry(country);
+            currentUser.setInterests(interests);
+            currentUser.setBio(bio);
+            
+            // Save to database
+            userRepository.updateUser(currentUser);
+            
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Profile Saved");
+            alert.setHeaderText(null);
+            alert.setContentText("Your profile has been saved successfully!");
+            alert.showAndWait();
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText(null);
+            alert.setContentText("Failed to save profile: " + e.getMessage());
+            alert.showAndWait();
+            e.printStackTrace();
+        }
     }
     
     @FXML
     private void searchUsers() {
+        if (userRepository == null) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText(null);
+            alert.setContentText("Repository not initialized. Please login first.");
+            alert.showAndWait();
+            return;
+        }
+        
         String searchTerm = searchField.getText().trim();
         if (searchTerm.isEmpty()) {
             Alert alert = new Alert(Alert.AlertType.WARNING);
@@ -259,52 +329,111 @@ public class homePageController {
             return;
         }
         
-        // TODO: Implement actual search in database
-        // For now, show sample results
-        List<User> searchResults = new ArrayList<>();
-        // This would be replaced with actual database query
-        searchResults.add(new User(1, "Sample", "User 1", "Male", "1990-01-01", "Technology", "Sample bio 1", "New York", "USA"));
-        searchResults.add(new User(2, "Sample", "User 2", "Female", "1992-05-15", "Music", "Sample bio 2", "Los Angeles", "USA"));
-        searchResults.add(new User(3, "Sample", "User 3", "Other", "1988-12-20", "Travel", "Sample bio 3", "Chicago", "USA"));
-        
-        discoverListView.getItems().clear();
-        discoverListView.getItems().addAll(searchResults);
+        try {
+            List<User> searchResults = userRepository.findUsersByName(searchTerm);
+            discoverListView.getItems().clear();
+            discoverListView.getItems().addAll(searchResults);
+            
+            if (searchResults.isEmpty()) {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("No Results");
+                alert.setHeaderText(null);
+                alert.setContentText("No users found matching your search.");
+                alert.showAndWait();
+            }
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText(null);
+            alert.setContentText("Failed to search users: " + e.getMessage());
+            alert.showAndWait();
+            e.printStackTrace();
+        }
     }
     
     private void followUser(User user) {
-        if (!isFollowing(user)) {
-            followingList.add(user);
-            followingListView.getItems().add(user);
+        if (userRepository == null || currentUser == null) {
+            return;
+        }
+        
+        try {
+            // Don't allow following yourself
+            if (user.getId() == currentUserId) {
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("Cannot Follow");
+                alert.setHeaderText(null);
+                alert.setContentText("You cannot follow yourself.");
+                alert.showAndWait();
+                return;
+            }
             
-            // Update the button in all lists if present
-            refreshFollowersList();
-            refreshDiscoverList();
-            refreshMutualFriendsList();
-            refreshPopularUsersList();
-            refreshSuggestedUsersList();
-            
-            System.out.println("Now following: " + user.toString());
+            if (!isFollowing(user)) {
+                userRepository.followUser(currentUserId, user.getId());
+                
+                // Update local cache
+                followingList.add(user);
+                followingListView.getItems().add(user);
+                
+                // Refresh all lists to update button states
+                refreshFollowersList();
+                refreshDiscoverList();
+                refreshMutualFriendsList();
+                refreshPopularUsersList();
+                refreshSuggestedUsersList();
+                
+            }
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText(null);
+            alert.setContentText("Failed to follow user: " + e.getMessage());
+            alert.showAndWait();
+            e.printStackTrace();
         }
     }
     
     private void unfollowUser(User user) {
-        if (isFollowing(user)) {
-            followingList.removeIf(u -> u.getId() == user.getId());
-            followingListView.getItems().removeIf(u -> u.getId() == user.getId());
-            
-            // Update the button in all lists if present
-            refreshFollowersList();
-            refreshDiscoverList();
-            refreshMutualFriendsList();
-            refreshPopularUsersList();
-            refreshSuggestedUsersList();
-            
-            System.out.println("Unfollowed: " + user.toString());
+        if (userRepository == null || currentUser == null) {
+            return;
+        }
+        
+        try {
+            if (isFollowing(user)) {
+                userRepository.unfollowUser(currentUserId, user.getId());
+                
+                // Update local cache
+                followingList.removeIf(u -> u.getId() == user.getId());
+                followingListView.getItems().removeIf(u -> u.getId() == user.getId());
+                
+                // Refresh all lists to update button states
+                refreshFollowersList();
+                refreshDiscoverList();
+                refreshMutualFriendsList();
+                refreshPopularUsersList();
+                refreshSuggestedUsersList();
+                
+            }
+        } catch (Exception e) {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setTitle("Error");
+            alert.setHeaderText(null);
+            alert.setContentText("Failed to unfollow user: " + e.getMessage());
+            alert.showAndWait();
+            e.printStackTrace();
         }
     }
     
     private boolean isFollowing(User user) {
-        return followingList.stream().anyMatch(u -> u.getId() == user.getId());
+        if (userRepository == null || currentUser == null) {
+            return false;
+        }
+        
+        try {
+            return userRepository.isFollowing(currentUserId, user.getId());
+        } catch (Exception e) {
+            // Fallback to local cache if repository call fails
+            return followingList.stream().anyMatch(u -> u.getId() == user.getId());
+        }
     }
     
     private void refreshFollowersList() {
@@ -343,30 +472,52 @@ public class homePageController {
     }
     
     private void loadProfileData() {
-        // TODO: Load actual profile data from database
-        // For now, leave fields empty or set sample data
+        if (userRepository == null || currentUser == null) {
+            return;
+        }
+        
+        try {
+            // Load current user data into form fields
+            firstNameField.setText(currentUser.getFirstName() != null ? currentUser.getFirstName() : "");
+            lastNameField.setText(currentUser.getLastName() != null ? currentUser.getLastName() : "");
+            genderField.setText(currentUser.getGender() != null ? currentUser.getGender() : "");
+            birthdayField.setText(currentUser.getDob() != null ? currentUser.getDob() : "");
+            cityField.setText(currentUser.getCity() != null ? currentUser.getCity() : "");
+            countryField.setText(currentUser.getCountry() != null ? currentUser.getCountry() : "");
+            interestsArea.setText(currentUser.getInterests() != null ? currentUser.getInterests() : "");
+            bioArea.setText(currentUser.getBio() != null ? currentUser.getBio() : "");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
     
     private void loadFollowingList() {
-        // TODO: Load actual following list from database
-        // For now, use sample data
-        User user1 = new User(101, "John", "Doe", "Male", "1990-01-15", "Technology, Gaming", "Tech enthusiast", "San Francisco", "USA");
-        User user2 = new User(102, "Jane", "Smith", "Female", "1992-05-20", "Music, Art", "Artist and musician", "New York", "USA");
-        followingList.add(user1);
-        followingList.add(user2);
-        followingListView.getItems().addAll(followingList);
+        if (userRepository == null) {
+            return;
+        }
+        
+        try {
+            List<User> following = userRepository.getFollowing(currentUserId);
+            followingList = new ArrayList<>(following);
+            followingListView.getItems().clear();
+            followingListView.getItems().addAll(following);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
     
     private void loadFollowersList() {
-        // TODO: Load actual followers list from database
-        // For now, use sample data
-        User user1 = new User(201, "Alice", "Johnson", "Female", "1988-03-10", "Travel, Photography", "World traveler", "Seattle", "USA");
-        User user2 = new User(202, "Bob", "Williams", "Male", "1995-07-25", "Sports, Fitness", "Fitness coach", "Miami", "USA");
-        User user3 = new User(203, "Charlie", "Brown", "Male", "1991-11-30", "Food, Cooking", "Chef", "Portland", "USA");
-        followersList.add(user1);
-        followersList.add(user2);
-        followersList.add(user3);
-        followersListView.getItems().addAll(followersList);
+        if (userRepository == null) {
+            return;
+        }
+        
+        try {
+            List<User> followers = userRepository.getFollowers(currentUserId);
+            followersListView.getItems().clear();
+            followersListView.getItems().addAll(followers);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
     
     private void showUserProfile(User user) {
@@ -378,12 +529,12 @@ public class homePageController {
         
         // Display user profile data from User object
         profileNameText.setText(user.toString());
-        profileGenderText.setText(user.getGender() != null ? user.getGender() : "Not specified");
-        profileBirthdayText.setText(user.getDob() != null ? user.getDob() : "Not specified");
-        profileCityText.setText(user.getCity() != null ? user.getCity() : "Not specified");
-        profileCountryText.setText(user.getCountry() != null ? user.getCountry() : "Not specified");
-        profileInterestsText.setText(user.getInterests() != null ? user.getInterests() : "Not specified");
-        profileBioText.setText(user.getBio() != null ? user.getBio() : "Not specified");
+        profileGenderText.setText(user.getGender() != null && !user.getGender().isEmpty() ? user.getGender() : "Not specified");
+        profileBirthdayText.setText(user.getDob() != null && !user.getDob().isEmpty() ? user.getDob() : "Not specified");
+        profileCityText.setText(user.getCity() != null && !user.getCity().isEmpty() ? user.getCity() : "Not specified");
+        profileCountryText.setText(user.getCountry() != null && !user.getCountry().isEmpty() ? user.getCountry() : "Not specified");
+        profileInterestsText.setText(user.getInterests() != null && !user.getInterests().isEmpty() ? user.getInterests() : "Not specified");
+        profileBioText.setText(user.getBio() != null && !user.getBio().isEmpty() ? user.getBio() : "Not specified");
         
         // Update follow button based on current following status
         if (isFollowing(user)) {
@@ -528,31 +679,46 @@ public class homePageController {
     }
     
     private void loadMutualFriendsList() {
-        // TODO: Load actual mutual friends from database
-        // For now, leave empty as requested
-        mutualFriendsListView.getItems().clear();
+        if (userRepository == null || currentUser == null) {
+            mutualFriendsListView.getItems().clear();
+            return;
+        }
+        
+        try {
+            // For mutual friends, we need another user to compare with
+            // For now, we'll leave it empty as it requires selecting another user
+            // This could be enhanced to show mutual friends with a selected user
+            mutualFriendsListView.getItems().clear();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
     
     private void loadPopularUsersList() {
-        // TODO: Load actual popular users from database
-        // For now, use sample data
-        List<User> popularUsers = new ArrayList<>();
-        popularUsers.add(new User(301, "Celebrity", "User 1", "Male", "1985-06-10", "Entertainment, Acting", "Famous actor", "Los Angeles", "USA"));
-        popularUsers.add(new User(302, "Celebrity", "User 2", "Female", "1990-08-15", "Music, Singing", "Pop star", "Nashville", "USA"));
-        popularUsers.add(new User(303, "Influencer", "User", "Other", "1992-04-22", "Fashion, Lifestyle", "Fashion influencer", "New York", "USA"));
-        popularUsers.add(new User(304, "Popular", "User 4", "Male", "1988-12-05", "Sports, Fitness", "Athlete", "Boston", "USA"));
-        popularUsers.add(new User(305, "Trending", "User 5", "Female", "1995-02-18", "Technology, Innovation", "Tech entrepreneur", "San Francisco", "USA"));
-        popularUsersListView.getItems().addAll(popularUsers);
+        if (userRepository == null) {
+            return;
+        }
+        
+        try {
+            List<User> popularUsers = userRepository.getPopularUsers(10);
+            popularUsersListView.getItems().clear();
+            popularUsersListView.getItems().addAll(popularUsers);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
     
     private void loadSuggestedUsersList() {
-        // TODO: Load actual suggested users from database based on mutual connections, interests, etc.
-        // For now, use sample data
-        List<User> suggestedUsers = new ArrayList<>();
-        suggestedUsers.add(new User(401, "Friend of", "Friend 1", "Male", "1991-03-12", "Technology, Gaming", "Tech enthusiast", "Austin", "USA"));
-        suggestedUsers.add(new User(402, "Similar Interest", "User", "Female", "1993-07-08", "Music, Art", "Musician", "Portland", "USA"));
-        suggestedUsers.add(new User(403, "Suggested", "User 3", "Male", "1989-09-25", "Travel, Photography", "Travel blogger", "Denver", "USA"));
-        suggestedUsers.add(new User(404, "Recommended", "User 4", "Female", "1994-11-14", "Food, Cooking", "Food blogger", "Seattle", "USA"));
-        suggestedUsersListView.getItems().addAll(suggestedUsers);
+        if (userRepository == null || currentUser == null) {
+            return;
+        }
+        
+        try {
+            List<User> suggestedUsers = userRepository.getSuggestedUsers(currentUserId, 10);
+            suggestedUsersListView.getItems().clear();
+            suggestedUsersListView.getItems().addAll(suggestedUsers);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
