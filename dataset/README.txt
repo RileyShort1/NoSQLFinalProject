@@ -9,3 +9,8 @@ These files contain only the US users, this reduces the dataset to about 12k nod
 The "SocialMediaUsersDataset_US_with_bio.csv" is a modified version of the dataset that adds a 'bio' column for the sake of the assignment spec. 
 
 The "follows.csv" file is a generated list of follows edge data. It was generated with the python script "generate_follows.py". 
+
+
+DATABASE SETUP:
+
+Use 'db_load_cyphers' document to setup the neo4j database. Based on the assignment spec, I think it is ok if we each host our own local databases. 
