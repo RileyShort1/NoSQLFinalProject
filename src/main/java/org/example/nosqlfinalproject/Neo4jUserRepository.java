@@ -7,6 +7,10 @@ import org.neo4j.driver.Session;
 import org.neo4j.driver.SessionConfig;
 import org.neo4j.driver.Values;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -44,20 +48,40 @@ public class Neo4jUserRepository {
         }
     }
 
+    public static String hashPassword(String password) {
+        if (password == null) {
+            return "";
+        }
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(password.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            for (byte b : hash) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Unable to hash password", e);
+        }
+    }
+
     /**
      * Create a new user node in Neo4j
      */
     public void createUser(User user) {
         try (Session session = createSession()) {
             // Combine firstName and lastName into name
-            String fullName = (user.getFirstName() != null ? user.getFirstName() : "") + 
+            String fullName = (user.getFirstName() != null ? user.getFirstName() : "") +
                              " " + (user.getLastName() != null ? user.getLastName() : "");
             fullName = fullName.trim();
-            
+
             String query = """
                 CREATE (u:User {
                     userId: $userId,
                     name: $name,
+                    email: $email,
+                    username: $username,
+                    password: $password,
                     gender: $gender,
                     dob: $dob,
                     interests: $interests,
@@ -67,10 +91,13 @@ public class Neo4jUserRepository {
                 })
                 RETURN u
                 """;
-            
+
             session.run(query, Values.parameters(
                 "userId", user.getId(),
                 "name", fullName,
+                "email", user.getEmail() != null ? user.getEmail() : "",
+                "username", user.getUsername() != null ? user.getUsername() : "",
+                "password", user.getPassword() != null ? user.getPassword() : "",
                 "gender", user.getGender() != null ? user.getGender() : "",
                 "dob", user.getDob() != null ? user.getDob() : "",
                 "interests", user.getInterests() != null ? user.getInterests() : "",
@@ -88,7 +115,23 @@ public class Neo4jUserRepository {
         try (Session session = createSession()) {
             String query = "MATCH (u:User {userId: $userId}) RETURN u";
             Result result = session.run(query, Values.parameters("userId", id));
-            
+
+            if (result.hasNext()) {
+                Record record = result.next();
+                return mapRecordToUser(record);
+            }
+            return null;
+        }
+    }
+
+    /**
+     * Find a user by username
+     */
+    public User findUserByUsername(String username) {
+        try (Session session = createSession()) {
+            String query = "MATCH (u:User {username: $username}) RETURN u";
+            Result result = session.run(query, Values.parameters("username", username));
+
             if (result.hasNext()) {
                 Record record = result.next();
                 return mapRecordToUser(record);
@@ -120,6 +163,38 @@ public class Neo4jUserRepository {
         } catch (Exception e) {
             e.printStackTrace();
             throw e;
+        }
+    }
+
+    /**
+     * Check if a username already exists in the database
+     */
+    public boolean usernameExists(String username) {
+        try (Session session = createSession()) {
+            String query = """
+                MATCH (u:User {username: $username})
+                RETURN count(u) > 0 as exists
+                """;
+
+            Result result = session.run(query, Values.parameters("username", username));
+            if (result.hasNext()) {
+                return result.next().get("exists").asBoolean();
+            }
+            return false;
+        }
+    }
+
+    /**
+     * Get the next available userId (max + 1)
+     */
+    public int getNextUserId() {
+        try (Session session = createSession()) {
+            String query = "MATCH (u:User) RETURN coalesce(max(u.userId), 0) + 1 as nextId";
+            Result result = session.run(query);
+            if (result.hasNext()) {
+                return result.next().get("nextId").asInt();
+            }
+            return 1;
         }
     }
 
@@ -176,13 +251,16 @@ public class Neo4jUserRepository {
     public void updateUser(User user) {
         try (Session session = createSession()) {
             // Combine firstName and lastName into name
-            String fullName = (user.getFirstName() != null ? user.getFirstName() : "") + 
+            String fullName = (user.getFirstName() != null ? user.getFirstName() : "") +
                              " " + (user.getLastName() != null ? user.getLastName() : "");
             fullName = fullName.trim();
-            
+
             String query = """
                 MATCH (u:User {userId: $userId})
                 SET u.name = $name,
+                    u.email = $email,
+                    u.username = $username,
+                    u.password = $password,
                     u.gender = $gender,
                     u.dob = $dob,
                     u.interests = $interests,
@@ -191,10 +269,13 @@ public class Neo4jUserRepository {
                     u.country = $country
                 RETURN u
                 """;
-            
+
             session.run(query, Values.parameters(
                 "userId", user.getId(),
                 "name", fullName,
+                "email", user.getEmail() != null ? user.getEmail() : "",
+                "username", user.getUsername() != null ? user.getUsername() : "",
+                "password", user.getPassword() != null ? user.getPassword() : "",
                 "gender", user.getGender() != null ? user.getGender() : "",
                 "dob", user.getDob() != null ? user.getDob() : "",
                 "interests", user.getInterests() != null ? user.getInterests() : "",
@@ -376,9 +457,13 @@ public class Neo4jUserRepository {
             ));
             return result.stream()
                 .map(record -> {
+                    if (record.get("suggested").isNull()) {
+                        return null;
+                    }
                     var userNode = record.get("suggested").asNode();
                     return mapNodeToUser(userNode);
                 })
+                .filter(user -> user != null)
                 .collect(Collectors.toList());
         }
     }
@@ -490,7 +575,18 @@ public class Neo4jUserRepository {
             ? userNode.get("city").asString() : "";
         String country = (userNode.containsKey("country") && !userNode.get("country").isNull()) 
             ? userNode.get("country").asString() : "";
+
+        User mappedUser = new User(id, firstName, lastName, gender, dob, interests, bio, city, country);
+        if (userNode.containsKey("email") && !userNode.get("email").isNull()) {
+            mappedUser.setEmail(userNode.get("email").asString());
+        }
+        if (userNode.containsKey("username") && !userNode.get("username").isNull()) {
+            mappedUser.setUsername(userNode.get("username").asString());
+        }
+        if (userNode.containsKey("password") && !userNode.get("password").isNull()) {
+            mappedUser.setPassword(userNode.get("password").asString());
+        }
         
-        return new User(id, firstName, lastName, gender, dob, interests, bio, city, country);
+        return mappedUser;
     }
 }

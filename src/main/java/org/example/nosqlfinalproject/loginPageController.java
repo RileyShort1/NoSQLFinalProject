@@ -7,6 +7,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.PasswordField;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 
@@ -23,9 +24,15 @@ public class loginPageController {
 
     @FXML
     private TextField nameField;
+    @FXML
+    private TextField usernameField;
+    @FXML
+    private PasswordField passwordField;
     
     @FXML
     private Button loginButton;
+    @FXML
+    private Button createAccountButton;
     
     // Setter for repository (should be called before login)
     public void setRepository(Neo4jUserRepository repository) {
@@ -43,28 +50,42 @@ public class loginPageController {
         }
         
         String nameInput = nameField.getText().trim();
-        if (nameInput.isEmpty()) {
+        String usernameInput = usernameField.getText().trim();
+        String passwordInput = passwordField.getText();
+        
+        if (passwordInput == null || passwordInput.trim().isEmpty()) {
             Alert alert = new Alert(Alert.AlertType.WARNING);
             alert.setTitle("Login Error");
             alert.setHeaderText(null);
-            alert.setContentText("Please enter a name (First Last).");
+            alert.setContentText("Please enter your password.");
             alert.showAndWait();
             return;
         }
         
-        // Parse the name - expect "FirstName LastName" format
-        String[] nameParts = nameInput.split("\\s+", 2);
-        if (nameParts.length < 2) {
+        if (usernameInput.isEmpty() && nameInput.isEmpty()) {
             Alert alert = new Alert(Alert.AlertType.WARNING);
             alert.setTitle("Login Error");
             alert.setHeaderText(null);
-            alert.setContentText("Please enter both first and last name (e.g., 'John Doe').");
+            alert.setContentText("Please enter either a username or your full name.");
             alert.showAndWait();
             return;
         }
         
-        String firstName = nameParts[0];
-        String lastName = nameParts[1];
+        String firstName = "";
+        String lastName = "";
+        if (usernameInput.isEmpty()) {
+            String[] nameParts = nameInput.split("\\s+", 2);
+            if (nameParts.length < 2) {
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("Login Error");
+                alert.setHeaderText(null);
+                alert.setContentText("Please enter both first and last name (e.g., 'John Doe').");
+                alert.showAndWait();
+                return;
+            }
+            firstName = nameParts[0];
+            lastName = nameParts[1];
+        }
         
         try {
             // Test database connection first
@@ -87,30 +108,56 @@ public class loginPageController {
                 return;
             }
             
-            // Search for user with exact first and last name match
-            User foundUser = userRepository.findUserByExactName(firstName, lastName);
+            User foundUser = null;
+            
+            if (!usernameInput.isEmpty()) {
+                foundUser = userRepository.findUserByUsername(usernameInput);
+            } else {
+                foundUser = userRepository.findUserByExactName(firstName, lastName);
+            }
             
             if (foundUser == null) {
-                // Try fuzzy search as fallback
-                List<User> users = userRepository.findUsersByName(nameInput);
-                
+                if (!usernameInput.isEmpty()) {
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setTitle("Login Failed");
+                    alert.setHeaderText(null);
+                    alert.setContentText("Username not found.");
+                    alert.showAndWait();
+                    return;
+                } else {
+                    List<User> users = userRepository.findUsersByName(nameInput);
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setTitle("Login Failed");
+                    alert.setHeaderText(null);
+                    
+                    if (users.isEmpty()) {
+                        alert.setContentText("User not found: " + firstName + " " + lastName + 
+                            "\n\nTotal users in database: " + userCount +
+                            "\nPlease check the name and try again.");
+                    } else {
+                        StringBuilder message = new StringBuilder("Exact match not found: " + firstName + " " + lastName);
+                        message.append("\n\nSimilar users found (").append(users.size()).append("):\n");
+                        for (int i = 0; i < Math.min(5, users.size()); i++) {
+                            User u = users.get(i);
+                            message.append("  - ").append(u.getFirstName()).append(" ").append(u.getLastName()).append("\n");
+                        }
+                        alert.setContentText(message.toString());
+                    }
+                    alert.showAndWait();
+                    return;
+                }
+            }
+            
+            String storedPassword = foundUser.getPassword();
+            if (storedPassword == null) {
+                storedPassword = "";
+            }
+            String hashedInput = Neo4jUserRepository.hashPassword(passwordInput);
+            if (!storedPassword.equals(hashedInput)) {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setTitle("Login Failed");
                 alert.setHeaderText(null);
-                
-                if (users.isEmpty()) {
-                    alert.setContentText("User not found: " + firstName + " " + lastName + 
-                        "\n\nTotal users in database: " + userCount +
-                        "\nPlease check the name and try again.");
-                } else {
-                    StringBuilder message = new StringBuilder("Exact match not found: " + firstName + " " + lastName);
-                    message.append("\n\nSimilar users found (").append(users.size()).append("):\n");
-                    for (int i = 0; i < Math.min(5, users.size()); i++) {
-                        User u = users.get(i);
-                        message.append("  - ").append(u.getFirstName()).append(" ").append(u.getLastName()).append("\n");
-                    }
-                    alert.setContentText(message.toString());
-                }
+                alert.setContentText("Incorrect password.");
                 alert.showAndWait();
                 return;
             }
@@ -134,5 +181,18 @@ public class loginPageController {
             alert.showAndWait();
             e.printStackTrace();
         }
+    }
+
+    @FXML
+    private void createAccountButtonPressed(javafx.event.ActionEvent actionEvent) throws IOException {
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("accountCreationPage.fxml"));
+        Parent accountCreation = loader.load();
+        accountCreationController controller = loader.getController();
+        if (userRepository != null) {
+            controller.setRepository(userRepository);
+        }
+
+        Scene scene = ((Node) actionEvent.getSource()).getScene();
+        scene.setRoot(accountCreation);
     }
 }

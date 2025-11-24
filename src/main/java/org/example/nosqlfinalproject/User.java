@@ -10,6 +10,9 @@ public class User {
     private String bio;
     private String city;
     private String country;
+    private String email;
+    private String username;
+    private String password;
 
     public User(int id, String firstName, String lastName, String gender, String dob, String interests, String bio, String city, String country) {
         this.id = id;
@@ -21,6 +24,9 @@ public class User {
         this.bio = bio;
         this.city = city;
         this.country = country;
+        this.email = "";
+        this.username = "";
+        this.password = "";
     }
 
     // Getters
@@ -60,6 +66,18 @@ public class User {
         return country; 
     }
 
+    public String getEmail() {
+        return email;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
     // Setters
     public void setId(int id) { 
         this.id = id; 
@@ -95,6 +113,18 @@ public class User {
 
     public void setCountry(String country) { 
         this.country = country; 
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
     }
 
     @Override
