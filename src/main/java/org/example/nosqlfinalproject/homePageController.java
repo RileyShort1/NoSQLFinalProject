@@ -521,28 +521,56 @@ public class homePageController {
     }
     
     private void showUserProfile(User user) {
-        selectedUser = user;
-        
-        // Hide the "no selection" text and show the profile pane
-        noSelectionText.setVisible(false);
-        userProfilePane.setVisible(true);
-        
-        // Display user profile data from User object
-        profileNameText.setText(user.toString());
-        profileGenderText.setText(user.getGender() != null && !user.getGender().isEmpty() ? user.getGender() : "Not specified");
-        profileBirthdayText.setText(user.getDob() != null && !user.getDob().isEmpty() ? user.getDob() : "Not specified");
-        profileCityText.setText(user.getCity() != null && !user.getCity().isEmpty() ? user.getCity() : "Not specified");
-        profileCountryText.setText(user.getCountry() != null && !user.getCountry().isEmpty() ? user.getCountry() : "Not specified");
-        profileInterestsText.setText(user.getInterests() != null && !user.getInterests().isEmpty() ? user.getInterests() : "Not specified");
-        profileBioText.setText(user.getBio() != null && !user.getBio().isEmpty() ? user.getBio() : "Not specified");
-        
-        // Update follow button based on current following status
-        if (isFollowing(user)) {
-            profileFollowButton.setText("Unfollow");
-        } else {
-            profileFollowButton.setText("Follow");
-        }
+    // Set the currently selected user (used for mutual friends, follow button, etc.)
+    selectedUser = user;
+
+    // Hide the "no selection" text and show the profile pane
+    noSelectionText.setVisible(false);
+    userProfilePane.setVisible(true);
+
+    // Display user profile data from User object
+    profileNameText.setText(user.toString());
+    profileGenderText.setText(
+            user.getGender() != null && !user.getGender().isEmpty()
+                    ? user.getGender()
+                    : "Not specified"
+    );
+    profileBirthdayText.setText(
+            user.getDob() != null && !user.getDob().isEmpty()
+                    ? user.getDob()
+                    : "Not specified"
+    );
+    profileCityText.setText(
+            user.getCity() != null && !user.getCity().isEmpty()
+                    ? user.getCity()
+                    : "Not specified"
+    );
+    profileCountryText.setText(
+            user.getCountry() != null && !user.getCountry().isEmpty()
+                    ? user.getCountry()
+                    : "Not specified"
+    );
+    profileInterestsText.setText(
+            user.getInterests() != null && !user.getInterests().isEmpty()
+                    ? user.getInterests()
+                    : "Not specified"
+    );
+    profileBioText.setText(
+            user.getBio() != null && !user.getBio().isEmpty()
+                    ? user.getBio()
+                    : "Not specified"
+    );
+
+    // Update follow button based on current following status
+    if (isFollowing(user)) {
+        profileFollowButton.setText("Unfollow");
+    } else {
+        profileFollowButton.setText("Follow");
     }
+
+    // Refresh mutual friends between the logged-in user and this selected user
+    loadMutualFriendsList();
+}
     
     @FXML
     private void handleProfileFollowAction() {
@@ -678,21 +706,24 @@ public class homePageController {
         });
     }
     
-    private void loadMutualFriendsList() {
-        if (userRepository == null || currentUser == null) {
-            mutualFriendsListView.getItems().clear();
-            return;
-        }
-        
-        try {
-            // For mutual friends, we need another user to compare with
-            // For now, we'll leave it empty as it requires selecting another user
-            // This could be enhanced to show mutual friends with a selected user
-            mutualFriendsListView.getItems().clear();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+   private void loadMutualFriendsList() {
+    // Need repo, logged-in user, and some other selected user
+    if (userRepository == null || currentUser == null || selectedUser == null) {
+        mutualFriendsListView.getItems().clear();
+        return;
     }
+
+    try {
+        // Mutual friends = users followed by both currentUser and selectedUser
+        List<User> mutuals = userRepository.getMutualFriends(currentUserId, selectedUser.getId());
+
+        mutualFriendsListView.getItems().clear();
+        mutualFriendsListView.getItems().addAll(mutuals);
+    } catch (Exception e) {
+        e.printStackTrace();
+    }
+}
+
     
     private void loadPopularUsersList() {
         if (userRepository == null) {
