@@ -2,14 +2,17 @@ package org.example.nosqlfinalproject;
 
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.util.Callback;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class homePageController {
@@ -52,7 +55,9 @@ public class homePageController {
     
     // Discover Tab
     @FXML
-    private ListView<User> mutualFriendsListView;
+    private ScrollPane mutualFriendsScrollPane;
+    @FXML
+    private VBox mutualFriendsContainer;
     @FXML
     private ListView<User> popularUsersListView;
     @FXML
@@ -77,6 +82,8 @@ public class homePageController {
     private Button profileFollowButton;
     @FXML
     private Text noSelectionText;
+    @FXML
+    private Text mutualFriendsLabel;
     
     // TabPane
     @FXML
@@ -113,7 +120,7 @@ public class homePageController {
         loadProfileData();
         loadFollowingList();
         loadFollowersList();
-        loadMutualFriendsList();
+        loadMutualFriendsList(); // Will show message since no user selected yet
         loadPopularUsersList();
         loadSuggestedUsersList();
     }
@@ -124,7 +131,6 @@ public class homePageController {
         setupFollowingListView();
         setupFollowersListView();
         setupDiscoverListView();
-        setupMutualFriendsListView();
         setupPopularUsersListView();
         setupSuggestedUsersListView();
         
@@ -451,10 +457,8 @@ public class homePageController {
     }
     
     private void refreshMutualFriendsList() {
-        // Refresh the mutual friends list view to update button states
-        List<User> currentMutual = new ArrayList<>(mutualFriendsListView.getItems());
-        mutualFriendsListView.getItems().clear();
-        mutualFriendsListView.getItems().addAll(currentMutual);
+        // Reload mutual friends from database to get fresh data
+        loadMutualFriendsList();
     }
     
     private void refreshPopularUsersList() {
@@ -589,44 +593,6 @@ public class homePageController {
         }
     }
     
-    private void setupMutualFriendsListView() {
-        mutualFriendsListView.setCellFactory(new Callback<ListView<User>, ListCell<User>>() {
-            @Override
-            public ListCell<User> call(ListView<User> param) {
-                return new ListCell<User>() {
-                    @Override
-                    protected void updateItem(User user, boolean empty) {
-                        super.updateItem(user, empty);
-                        if (empty || user == null) {
-                            setGraphic(null);
-                        } else {
-                            HBox hbox = new HBox(10);
-                            Text nameText = new Text(user.toString());
-                            nameText.setStyle("-fx-font-size: 14px;");
-                            
-                            Button actionButton;
-                            if (isFollowing(user)) {
-                                actionButton = new Button("Unfollow");
-                                actionButton.setOnAction(e -> {
-                                    e.consume();
-                                    unfollowUser(user);
-                                });
-                            } else {
-                                actionButton = new Button("Follow");
-                                actionButton.setOnAction(e -> {
-                                    e.consume();
-                                    followUser(user);
-                                });
-                            }
-                            
-                            hbox.getChildren().addAll(nameText, actionButton);
-                            setGraphic(hbox);
-                        }
-                    }
-                };
-            }
-        });
-    }
     
     private void setupPopularUsersListView() {
         popularUsersListView.setCellFactory(new Callback<ListView<User>, ListCell<User>>() {
@@ -707,20 +673,98 @@ public class homePageController {
     }
     
    private void loadMutualFriendsList() {
-    // Need repo, logged-in user, and some other selected user
-    if (userRepository == null || currentUser == null || selectedUser == null) {
-        mutualFriendsListView.getItems().clear();
+    if (userRepository == null || currentUser == null || mutualFriendsContainer == null) {
+        if (mutualFriendsContainer != null) {
+            mutualFriendsContainer.getChildren().clear();
+        }
+        updateMutualFriendsLabel(null);
         return;
     }
 
     try {
-        // Mutual friends = users followed by both currentUser and selectedUser
-        List<User> mutuals = userRepository.getMutualFriends(currentUserId, selectedUser.getId());
-
-        mutualFriendsListView.getItems().clear();
-        mutualFriendsListView.getItems().addAll(mutuals);
+        // Get mutual friends grouped by connection
+        Map<User, List<User>> groupedMutuals = userRepository.getMutualFriendsGroupedByConnection(currentUserId);
+        
+        // Clear existing content
+        mutualFriendsContainer.getChildren().clear();
+        
+        if (groupedMutuals.isEmpty()) {
+            // No mutual friends found
+            Text noMutualsText = new Text("No mutual friends found.\nConnect with more people to see mutual friends.");
+            noMutualsText.setStyle("-fx-font-size: 14px; -fx-fill: #6b7280;");
+            mutualFriendsContainer.getChildren().add(noMutualsText);
+            updateMutualFriendsLabel(null);
+        } else {
+            // Create a group for each connection
+            for (Map.Entry<User, List<User>> entry : groupedMutuals.entrySet()) {
+                User connection = entry.getKey();
+                List<User> mutuals = entry.getValue();
+                
+                // Create a VBox for this connection group
+                VBox connectionGroup = new VBox(8);
+                connectionGroup.setPadding(new Insets(10, 0, 10, 0));
+                
+                // Add header with connection name
+                Text groupHeader = new Text("Mutual Friends with " + connection.toString() + " (" + mutuals.size() + ")");
+                groupHeader.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-fill: #1f2937;");
+                connectionGroup.getChildren().add(groupHeader);
+                
+                // Create ListView for mutual friends in this group
+                ListView<User> groupListView = new ListView<>();
+                groupListView.setPrefHeight(Math.min(mutuals.size() * 40 + 10, 200)); // Limit height
+                groupListView.getItems().addAll(mutuals);
+                
+                // Setup cell factory for the list
+                groupListView.setCellFactory(param -> new ListCell<User>() {
+                    @Override
+                    protected void updateItem(User user, boolean empty) {
+                        super.updateItem(user, empty);
+                        if (empty || user == null) {
+                            setGraphic(null);
+                        } else {
+                            HBox hbox = new HBox(10);
+                            Text nameText = new Text(user.toString());
+                            nameText.setStyle("-fx-font-size: 14px;");
+                            
+                            Button actionButton;
+                            if (isFollowing(user)) {
+                                actionButton = new Button("Unfollow");
+                                actionButton.setOnAction(e -> {
+                                    e.consume();
+                                    unfollowUser(user);
+                                });
+                            } else {
+                                actionButton = new Button("Follow");
+                                actionButton.setOnAction(e -> {
+                                    e.consume();
+                                    followUser(user);
+                                });
+                            }
+                            
+                            hbox.getChildren().addAll(nameText, actionButton);
+                            setGraphic(hbox);
+                        }
+                    }
+                });
+                
+                connectionGroup.getChildren().add(groupListView);
+                mutualFriendsContainer.getChildren().add(connectionGroup);
+            }
+            
+            updateMutualFriendsLabel(null);
+        }
     } catch (Exception e) {
         e.printStackTrace();
+        if (mutualFriendsContainer != null) {
+            mutualFriendsContainer.getChildren().clear();
+        }
+        updateMutualFriendsLabel(null);
+    }
+}
+
+private void updateMutualFriendsLabel(User selectedUser) {
+    if (mutualFriendsLabel != null) {
+        mutualFriendsLabel.setText("Mutual Friends");
     }
 }
 

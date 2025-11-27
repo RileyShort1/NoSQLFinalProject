@@ -411,6 +411,69 @@ public class Neo4jUserRepository {
     }
 
     /**
+     * Get all mutual friends across all connections
+     * Returns users that the current user follows, and at least one of their connections (followers or following) also follows
+     */
+    public List<User> getAllMutualFriends(int userId) {
+        try (Session session = createSession()) {
+            String query = """
+                MATCH (currentUser:User {userId: $userId})-[:FOLLOWS]->(mutual:User)
+                MATCH (mutual)<-[:FOLLOWS]-(connection:User)
+                WHERE connection.userId <> $userId
+                  AND ((currentUser)-[:FOLLOWS]->(connection) OR (connection)-[:FOLLOWS]->(currentUser))
+                WITH DISTINCT mutual
+                RETURN mutual
+                ORDER BY mutual.name
+                """;
+            
+            Result result = session.run(query, Values.parameters("userId", userId));
+            return result.stream()
+                .map(record -> {
+                    var userNode = record.get("mutual").asNode();
+                    return mapNodeToUser(userNode);
+                })
+                .collect(Collectors.toList());
+        }
+    }
+
+    /**
+     * Get mutual friends grouped by connection
+     * Returns a map where key is the connection (follower or following) and value is list of mutual friends
+     */
+    public java.util.Map<User, List<User>> getMutualFriendsGroupedByConnection(int userId) {
+        try (Session session = createSession()) {
+            String query = """
+                MATCH (currentUser:User {userId: $userId})-[:FOLLOWS]->(mutual:User)
+                MATCH (mutual)<-[:FOLLOWS]-(connection:User)
+                WHERE connection.userId <> $userId
+                  AND ((currentUser)-[:FOLLOWS]->(connection) OR (connection)-[:FOLLOWS]->(currentUser))
+                RETURN connection, collect(DISTINCT mutual) as mutuals
+                ORDER BY connection.name
+                """;
+            
+            Result result = session.run(query, Values.parameters("userId", userId));
+            java.util.Map<User, List<User>> grouped = new java.util.LinkedHashMap<>();
+            
+            result.forEachRemaining(record -> {
+                var connectionNode = record.get("connection").asNode();
+                User connection = mapNodeToUser(connectionNode);
+                var mutualNodes = record.get("mutuals").asList();
+                List<User> mutualFriends = mutualNodes.stream()
+                    .map(node -> mapNodeToUser(((org.neo4j.driver.types.Node) node)))
+                    .sorted((u1, u2) -> {
+                        String name1 = (u1.getFirstName() + " " + u1.getLastName()).trim();
+                        String name2 = (u2.getFirstName() + " " + u2.getLastName()).trim();
+                        return name1.compareToIgnoreCase(name2);
+                    })
+                    .collect(Collectors.toList());
+                grouped.put(connection, mutualFriends);
+            });
+            
+            return grouped;
+        }
+    }
+
+    /**
      * Get most popular users (users with the most followers)
      */
     public List<User> getPopularUsers(int limit) {

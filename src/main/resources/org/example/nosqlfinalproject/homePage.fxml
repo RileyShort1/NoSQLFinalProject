@@ -312,12 +312,20 @@
                                                 <Insets top="10.0" right="10.0" bottom="10.0" left="10.0" />
                                             </padding>
                                             <children>
-                                                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Mutual Friends" wrappingWidth="200.0">
+                                                <Text fx:id="mutualFriendsLabel" strokeType="OUTSIDE" strokeWidth="0.0" text="Mutual Friends" wrappingWidth="200.0">
                                                     <font>
                                                         <Font name="System Bold" size="18.0" />
                                                     </font>
                                                 </Text>
-                                                <ListView fx:id="mutualFriendsListView" VBox.vgrow="ALWAYS" />
+                                                <ScrollPane fx:id="mutualFriendsScrollPane" fitToWidth="true" VBox.vgrow="ALWAYS" vbarPolicy="AS_NEEDED" hbarPolicy="NEVER">
+                                                    <content>
+                                                        <VBox fx:id="mutualFriendsContainer" spacing="15.0">
+                                                            <padding>
+                                                                <Insets top="5.0" right="5.0" bottom="5.0" left="5.0" />
+                                                            </padding>
+                                                        </VBox>
+                                                    </content>
+                                                </ScrollPane>
                                             </children>
                                         </VBox>
                                         
